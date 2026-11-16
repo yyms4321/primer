@@ -31,13 +31,21 @@ const logger = createModuleLogger('backend-agent-ai-handler');
 /** Claude Opus 4.6 max output via synchronous Messages API (128k). See Anthropic models overview. */
 const ANTHROPIC_BACKEND_AGENT_MAX_OUTPUT_TOKENS = 128_000;
 
-const openai = new OpenAI({
-  apiKey: env.OPENAI_API_KEY,
-});
+// Construct SDK clients only when an AI request is actually made.
+// Next.js imports route modules during build, when API credentials may not exist.
+function getOpenAIClient(): OpenAI {
+  if (!env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not configured for the server runtime');
+  }
+  return new OpenAI({ apiKey: env.OPENAI_API_KEY });
+}
 
-const anthropic = new Anthropic({
-  apiKey: env.ANTHROPIC_API_KEY,
-});
+function getAnthropicClient(): Anthropic {
+  if (!env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY is not configured for the server runtime');
+  }
+  return new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+}
 
 type AnthropicMessageCreateParams = Omit<
   Anthropic.MessageCreateParams,
@@ -52,7 +60,7 @@ type AnthropicMessageCreateParams = Omit<
 async function requestAnthropicMessage(
   params: AnthropicMessageCreateParams,
 ): Promise<Anthropic.Message> {
-  const stream = anthropic.messages.stream(params);
+  const stream = getAnthropicClient().messages.stream(params);
   return stream.finalMessage();
 }
 
@@ -136,7 +144,7 @@ export class AIRequestHandler {
       // Convert response to OpenAI format for consistency
       return convertAnthropicResponseToOpenAI(response);
     } else {
-      const response = await openai.chat.completions.create({
+      const response = await getOpenAIClient().chat.completions.create({
         model: providerConfig.modelName,
         messages: [
           {
@@ -196,7 +204,7 @@ export class AIRequestHandler {
       // Convert back to OpenAI format
       return convertAnthropicResponseToOpenAI(nextResponse);
     } else {
-      const nextResponse = await openai.chat.completions.create({
+      const nextResponse = await getOpenAIClient().chat.completions.create({
         model: providerConfig.modelName,
         messages: allMessages,
         ...(experience.temperature !== undefined && { temperature: experience.temperature }),
