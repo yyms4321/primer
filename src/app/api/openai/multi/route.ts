@@ -8,11 +8,15 @@ import type {
 } from "openai/resources/responses/responses";
 import { createModuleLogger } from '@/lib/logger';
 
-const openai = new OpenAI();
 const logger = createModuleLogger('openai-multi');
 
 export async function POST(req: Request) {
   try {
+    // Instantiate only when called; builds should not require paid API credentials.
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: 'OpenAI API is not configured' }, { status: 503 });
+    }
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const { 
       task, 
       model, 
