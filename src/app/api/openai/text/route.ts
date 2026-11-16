@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createModuleLogger } from '@/lib/logger';
 
-const openai = new OpenAI();
 const logger = createModuleLogger('openai-text');
 
 export async function POST(req: Request) {
@@ -10,6 +9,11 @@ export async function POST(req: Request) {
     const { model, instructions, input, messages } = await req.json();
 
     // If messages are provided, use them as input array
+    // Initialize only during the request, not while Next.js collects build data.
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: 'OpenAI API is not configured' }, { status: 503 });
+    }
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const response = await openai.responses.create({
       model,
       input: messages || input,
