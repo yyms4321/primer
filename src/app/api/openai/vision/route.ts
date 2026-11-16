@@ -3,11 +3,15 @@ import OpenAI from "openai";
 import type { EasyInputMessage, ResponseInputText, ResponseInputImage } from "openai/resources/responses/responses";
 import { createModuleLogger } from '@/lib/logger';
 
-const openai = new OpenAI();
 const logger = createModuleLogger('openai-vision');
 
 export async function POST(req: Request) {
   try {
+    // Instantiate only when called; builds should not require paid API credentials.
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: 'OpenAI API is not configured' }, { status: 503 });
+    }
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const { model, prompt, imageUrls, detail = "auto" } = await req.json();
 
     if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
