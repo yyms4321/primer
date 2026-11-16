@@ -112,7 +112,9 @@ export const SocketController = forwardRef<SocketControllerRef, SocketController
         sessionIdRef.current = existingSessionId;
       }
       
-      const socketUrl = env.NEXT_PUBLIC_SOCKET_SERVER_URL || 'http://localhost:3000';
+      // Default to the site serving this page, not localhost on the visitor's computer.
+      // An explicit URL still supports separate socket hosting where required.
+      const socketUrl = env.NEXT_PUBLIC_SOCKET_SERVER_URL || window.location.origin;
 
       logger.info({ 
         socketUrl, 
