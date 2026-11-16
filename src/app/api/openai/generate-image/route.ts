@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createModuleLogger } from '@/lib/logger';
 
-const openai = new OpenAI();
 const logger = createModuleLogger('openai-generate-image');
 
 export async function POST(req: Request) {
   try {
+    // Instantiate only when called; builds should not require paid API credentials.
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: 'OpenAI API is not configured' }, { status: 503 });
+    }
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const { 
       prompt, 
       model = "dall-e-3",
