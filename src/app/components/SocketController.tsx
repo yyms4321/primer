@@ -126,7 +126,12 @@ export const SocketController = forwardRef<SocketControllerRef, SocketController
       const socket = ioRef.current(socketUrl, {
         path: '/api/socketio',
         addTrailingSlash: false,
-        transports: ['websocket', 'polling'],
+        // Vercel Functions cannot guarantee sticky routing across Engine.IO polling requests.
+        // Force a single WebSocket upgrade when enabled; preserve the original
+        // fallback for local development and other always-on server deployments.
+        transports: process.env.NEXT_PUBLIC_SOCKET_WEBSOCKET_ONLY === 'true'
+          ? ['websocket']
+          : ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
