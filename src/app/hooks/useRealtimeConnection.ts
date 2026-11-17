@@ -4,7 +4,7 @@
  * Manages WebRTC connection lifecycle for OpenAI Realtime API:
  * - RTCPeerConnection and RTCDataChannel management
  * - Connection, disconnection, and reconnection logic
- * - Ephemeral key fetching
+ * - Authenticated same-origin SDP negotiation
  * - Connection status tracking
  */
 
@@ -52,41 +52,6 @@ export function useRealtimeConnection({
   const selectedConfig = aiConfigurations[selectedAgentAiConfiguration] || aiConfigurations.default;
   const hasAudio = selectedConfig?.modalities?.includes('audio');
 
-  const fetchEphemeralKey = useCallback(async (): Promise<string | null> => {
-    const currentAgent = agents[selectedAgentKey];
-    const selectedConfig = aiConfigurations[selectedAgentAiConfiguration] || aiConfigurations.default;
-    
-    // The GA Realtime API (POST /v1/realtime/client_secrets) accepts
-    // `reasoning: { effort }` on the session config, so we forward it here
-    // when the experience opts in. useSessionManagement also re-sends it
-    // in the data-channel session.update so it survives agent switches.
-    const reasoningEffort = selectedConfig?.reasoningEffort;
-
-    const response = await fetch("/api/session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: selectedConfig?.model,
-        modalities: selectedConfig?.modalities,
-        voice: sanitizeVoice(currentAgent?.voice),
-        ...(reasoningEffort ? { reasoning: { effort: reasoningEffort } } : {}),
-      })
-    });
-    const data = await response.json();
-    logServerEvent(data, "fetch_session_token_response");
-
-    if (!data.client_secret?.value) {
-      logClientEvent(data, "error.no_ephemeral_key");
-      logger.error({ data }, 'No ephemeral key provided by the server');
-      onStatusChange("DISCONNECTED");
-      return null;
-    }
-
-    return data.client_secret.value;
-  }, [selectedAgentKey, agents, aiConfigurations, selectedAgentAiConfiguration, logServerEvent, logClientEvent, onStatusChange]);
-
   const connectToRealtime = useCallback(async () => {
     if (isConnectingRef.current) {
       logger.debug({}, 'Already connecting, skipping');
@@ -97,10 +62,7 @@ export function useRealtimeConnection({
     onStatusChange("CONNECTING");
 
     try {
-      const EPHEMERAL_KEY = await fetchEphemeralKey();
-      if (!EPHEMERAL_KEY) {
-        return;
-      }
+      const currentAgent = agents[selectedAgentKey];
 
       if (!audioElementRef.current) {
         audioElementRef.current = document.createElement("audio");
@@ -109,10 +71,11 @@ export function useRealtimeConnection({
       audioElementRef.current.autoplay = isAudioPlaybackEnabled;
 
       const { pc, dc } = await createRealtimeConnection(
-        EPHEMERAL_KEY,
         audioElementRef,
         hasAudio,
-        selectedConfig?.model
+        selectedConfig?.model || "gpt-realtime",
+        sanitizeVoice(currentAgent?.voice),
+        selectedConfig?.reasoningEffort,
       );
       pcRef.current = pc;
       dcRef.current = dc;
@@ -146,7 +109,8 @@ export function useRealtimeConnection({
       isConnectingRef.current = false;
     }
   }, [
-    fetchEphemeralKey,
+    agents,
+    selectedAgentKey,
     audioElementRef,
     isAudioPlaybackEnabled,
     hasAudio,
