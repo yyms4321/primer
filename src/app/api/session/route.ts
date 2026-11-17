@@ -27,6 +27,9 @@ function normalizeEphemeralResponse(data: {
 }
 
 export async function POST(request: Request) {
+  if (process.env.VERCEL_ENV === 'preview') {
+    return NextResponse.json({ error: '실시간 음성 기능은 비용 절약을 위해 Preview에서 비활성화되었습니다.' }, { status: 410 });
+  }
   try {
     const { model, modalities, voice, reasoning } = await request.json();
 
