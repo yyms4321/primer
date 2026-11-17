@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-import { env } from '@/config/env'
 import { getCSPHeaders, isDevelopmentMode, getProductionUrl } from '@/lib/csp'
 
 /**
@@ -26,7 +25,7 @@ import { getCSPHeaders, isDevelopmentMode, getProductionUrl } from '@/lib/csp'
 export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request })
   const devAuthBypassEnabled =
-    env.NODE_ENV !== 'production' && env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true';
+    process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true';
 
   // Store the current URL to redirect back after auth
   const currentUrl = request.nextUrl.pathname + request.nextUrl.search
