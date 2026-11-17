@@ -42,7 +42,6 @@ export function useRealtimeConnection({
   onDataChannelChange,
   onDataChannelMessage,
   logClientEvent,
-  logServerEvent,
   onRealtimeConnected,
 }: UseRealtimeConnectionProps) {
   const pcRef = useRef<RTCPeerConnection | null>(null);
