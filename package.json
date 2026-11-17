@@ -11,7 +11,7 @@
     "prepare": "(command -v husky >/dev/null 2>&1 && husky || true)",
     "bump-version": "node scripts/bump-version.js",
     "dev": "tsx --inspect server.ts",
-    "build": "next build",
+    "build": "node scripts/bundle-primer-modules.mjs && next build",
     "start": "tsx server.ts",
     "start:production": "tsx server.ts",
     "lint": "next lint",
