@@ -94,22 +94,21 @@ export async function POST(request: NextRequest) {
       return { response, text, errorCode, errorMessage };
     }
 
-    let result = await negotiate(model);
-    let fallbackUsed = false;
-    if (!result.response.ok &&
-        result.errorCode === 'model_not_found' &&
-        model === 'gpt-realtime-1.5' &&
-        process.env.VERCEL_ENV === 'preview') {
-      fallbackUsed = true;
-      result = await negotiate('gpt-realtime-2.1-mini');
+    // Isolate the legacy model as a one-model compatibility test in Preview.
+    // Do not modify persisted experience.json or Production.
+    const previewModelOverride = process.env.VERCEL_ENV === 'preview';
+    const chosenModel = previewModelOverride ? 'gpt-realtime' : model;
+    if (previewModelOverride) {
+      delete session.reasoning;
     }
+    const result = await negotiate(chosenModel);
 
     if (!result.response.ok) {
       return NextResponse.json({
         error: result.errorMessage,
         code: result.errorCode,
         status: result.response.status,
-        ...(fallbackUsed ? { attemptedFallback: 'gpt-realtime-2.1-mini' } : {}),
+        ...(previewModelOverride ? { attemptedModel: chosenModel } : {}),
       }, { status: 502 });
     }
 
