@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -78,7 +79,7 @@ export default function TextOnlyExperience({
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b bg-white px-5 py-4">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
-          <a href="/" className="text-sm text-slate-600 hover:underline">← 학습 활동 목록</a>
+          <Link href="/" className="text-sm text-slate-600 hover:underline">← 학습 활동 목록</Link>
           <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">한국어 · 텍스트 전용</span>
         </div>
       </header>
