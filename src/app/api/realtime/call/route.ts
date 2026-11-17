@@ -61,36 +61,59 @@ export async function POST(request: NextRequest) {
 
     // Official unified WebRTC interface: form-data containing SDP and session
     // authenticated only on the server. Do not manually set multipart Content-Type.
-    const form = new FormData();
-    // OpenAI expects multipart *text fields*, not uploaded file parts.
-    // Passing Blob adds a filename and causes 'field sdp is required' (400).
-    form.set('sdp', body.sdp);
-    form.set('session', JSON.stringify(session));
-
-    const upstream = await fetch('https://api.openai.com/v1/realtime/calls', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}` },
-      body: form,
-      cache: 'no-store',
-      redirect: 'manual',
-      signal: AbortSignal.timeout(25000),
-    });
-
-    const answer = await upstream.text();
-    if (!upstream.ok) {
-      // Do not log upstream response or tokens; return only sanitized, useful diagnostics.
-      let message = `OpenAI Realtime call failed (HTTP ${upstream.status})`;
-      let code = 'upstream_error';
-      try {
-        const parsed = JSON.parse(answer);
-        if (typeof parsed.error?.message === 'string') message = parsed.error.message.slice(0, 350);
-        if (typeof parsed.error?.code === 'string') code = parsed.error.code.slice(0, 80);
-      } catch {
-        // Non-JSON upstream failure.
+    // Submit SDP/session as multipart text fields. If the configured voice model
+    // is unavailable to this API project, try one lower-cost current model once.
+    // This preview-only fallback does not change the experience's persisted config.
+    async function negotiate(requestedModel: string) {
+      const candidate = { ...session, model: requestedModel };
+      // Reasoning settings are model-specific; avoid applying them to a
+      // fallback unless the experience explicitly requested a supported effort.
+      const form = new FormData();
+      form.set('sdp', body.sdp as string);
+      form.set('session', JSON.stringify(candidate));
+      const response = await fetch('https://api.openai.com/v1/realtime/calls', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}` },
+        body: form,
+        cache: 'no-store',
+        redirect: 'manual',
+        signal: AbortSignal.timeout(25000),
+      });
+      const text = await response.text();
+      let errorCode = 'upstream_error';
+      let errorMessage = `OpenAI Realtime call failed (HTTP ${response.status})`;
+      if (!response.ok) {
+        try {
+          const parsed = JSON.parse(text);
+          if (typeof parsed.error?.code === 'string') errorCode = parsed.error.code.slice(0, 80);
+          if (typeof parsed.error?.message === 'string') errorMessage = parsed.error.message.slice(0, 350);
+        } catch {
+          // Non-JSON error.
+        }
       }
-      return NextResponse.json({ error: message, code, status: upstream.status }, { status: 502 });
+      return { response, text, errorCode, errorMessage };
     }
 
+    let result = await negotiate(model);
+    let fallbackUsed = false;
+    if (!result.response.ok &&
+        result.errorCode === 'model_not_found' &&
+        model === 'gpt-realtime-1.5' &&
+        process.env.VERCEL_ENV === 'preview') {
+      fallbackUsed = true;
+      result = await negotiate('gpt-realtime-2.1-mini');
+    }
+
+    if (!result.response.ok) {
+      return NextResponse.json({
+        error: result.errorMessage,
+        code: result.errorCode,
+        status: result.response.status,
+        ...(fallbackUsed ? { attemptedFallback: 'gpt-realtime-2.1-mini' } : {}),
+      }, { status: 502 });
+    }
+
+    const answer = result.text;
     if (!answer.startsWith('v=0')) {
       return NextResponse.json({ error: 'OpenAI returned an invalid SDP answer' }, { status: 502 });
     }
