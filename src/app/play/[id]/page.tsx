@@ -18,6 +18,7 @@ import { createModuleLogger } from '@/lib/logger';
 import PlayClient, { type PlayClientSessionPayload } from './PlayClient';
 import PlayShell from './PlayShell';
 import ValidationErrorScreen from './ValidationErrorScreen';
+import TextOnlyExperience from './TextOnlyExperience';
 
 const logger = createModuleLogger('play-page');
 
@@ -166,6 +167,13 @@ export default async function PlayPage({ params, searchParams }: PlayPageProps) 
         kind={experienceKind}
       />
     );
+  }
+
+  // Preview text-only mode: do not mount WebRTC, microphone, audio or Socket.IO.
+  // It intentionally avoids the original activity creation tool runtime;
+  // that functionality requires a separate text-tool migration.
+  if (process.env.VERCEL_ENV === 'preview') {
+    return <TextOnlyExperience experienceId={experienceId} title={bootstrap.bootstrap.title} />;
   }
 
   // Pre-flight gate: structural + filesystem + env-key validation. Skipped
