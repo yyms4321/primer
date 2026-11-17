@@ -1,15 +1,12 @@
 import { RefObject } from "react";
 
 export async function createRealtimeConnection(
-  EPHEMERAL_KEY: string,
   audioElement: RefObject<HTMLAudioElement | null>,
   hasAudio: boolean = true,
-  // The model parameter is no longer used by the GA endpoint (the model is
-  // bound to the ephemeral key by /v1/realtime/client_secrets) but is kept
-  // in the signature for backwards compatibility with existing callers.
-  _model: string = "gpt-realtime"
+  model: string = "gpt-realtime",
+  voice: string = "ballad",
+  reasoningEffort?: string,
 ): Promise<{ pc: RTCPeerConnection; dc: RTCDataChannel }> {
-  void _model;
   const pc = new RTCPeerConnection();
 
   if (hasAudio) {
@@ -58,40 +55,40 @@ export async function createRealtimeConnection(
     });
   }
 
-  // GA Realtime WebRTC endpoint. The legacy POST /v1/realtime?model=...
-  // path does not support newer models like gpt-realtime-2; the GA endpoint
-  // is /v1/realtime/calls and the model is already bound to the ephemeral
-  // key by /v1/realtime/client_secrets, so no `?model=` query is needed.
-  // See: https://developers.openai.com/api/docs/guides/realtime-webrtc
-  const sdpResponse = await fetch("https://api.openai.com/v1/realtime/calls", {
+  // Realtime unified WebRTC API: the browser sends SDP to our authenticated
+  // server endpoint, which forwards it as multipart form-data to OpenAI.
+  // This avoids browser-side secret handling and cross-origin negotiation.
+  const sdpResponse = await fetch("/api/realtime/call", {
     method: "POST",
-    // Use the live localDescription (includes all gathered ICE candidates)
-    // rather than the original offer snapshot.
-    body: pc.localDescription!.sdp,
-    headers: {
-      Authorization: `Bearer ${EPHEMERAL_KEY}`,
-      "Content-Type": "application/sdp",
-    },
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sdp: pc.localDescription!.sdp,
+      model,
+      modalities: hasAudio ? ["audio"] : ["text"],
+      voice,
+      reasoningEffort,
+    }),
   });
 
   const answerSdp = await sdpResponse.text();
-
-  // Try to parse the response as JSON in case it's an error message
-  try {
-    const jsonResponse = JSON.parse(answerSdp);
-    if (jsonResponse.error) {
-      throw new Error(`API Error: ${jsonResponse.error.message}`);
+  if (!sdpResponse.ok) {
+    let message = `Realtime negotiation failed (HTTP ${sdpResponse.status})`;
+    try {
+      const parsed = JSON.parse(answerSdp);
+      if (typeof parsed.error === "string") message = parsed.error;
+    } catch {
+      // Plaintext upstream error.
     }
-  } catch {
-    // Not JSON, which is expected for SDP
+    pc.close();
+    throw new Error(message);
+  }
+  if (!answerSdp.startsWith("v=0")) {
+    pc.close();
+    throw new Error("Realtime server returned an invalid SDP answer");
   }
 
-  const answer: RTCSessionDescriptionInit = {
-    type: "answer",
-    sdp: answerSdp,
-  };
-
-  await pc.setRemoteDescription(answer);
+  await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
 
   return { pc, dc };
 } 
