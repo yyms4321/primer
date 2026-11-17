@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import unzipper from 'unzipper';
 
 const registryUrl = 'https://raw.githubusercontent.com/wharton-generative-ai-labs/primer-modules/main/modules.json';
-const root = path.resolve('public/primer-bundled');
+const root = path.resolve('bundled-modules');
 const selected = ['experience-creator-with-workflows', 'roleplay-template-with-workflows', 'teachback-template-with-workflows'];
 const maximumArchiveBytes = 70 * 1024 * 1024;
 const maximumExtractedBytes = 200 * 1024 * 1024;
