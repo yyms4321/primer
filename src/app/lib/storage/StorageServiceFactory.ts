@@ -1,5 +1,6 @@
 import { StorageService } from './StorageService';
 import { LocalStorageService } from './LocalStorageService';
+import { BundledFallbackStorageService } from './BundledFallbackStorageService';
 import { env } from '@/config/env';
 import path from 'path';
 
@@ -11,7 +12,15 @@ export class StorageServiceFactory {
       // Use environment variable with fallback to default storage directory
       const baseDir = env.STORAGE_ROOT_PATH || path.join(process.cwd(), 'storage');
       const baseUrl = '/api/storage';
-      this.instance = new LocalStorageService(baseDir, baseUrl);
+      const writable = new LocalStorageService(baseDir, baseUrl);
+      // Only enable the read-only module bundle overlay for the Vercel preview.
+      // Production/local behavior remains unchanged.
+      this.instance = process.env.VERCEL_ENV === 'preview'
+        ? new BundledFallbackStorageService(
+            writable,
+            new LocalStorageService(path.join(process.cwd(), 'public', 'primer-bundled'), baseUrl),
+          )
+        : writable;
     } else {
       throw new Error(`Unsupported storage type: ${storageType}`);
     }
