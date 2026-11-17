@@ -62,8 +62,10 @@ export async function POST(request: NextRequest) {
     // Official unified WebRTC interface: form-data containing SDP and session
     // authenticated only on the server. Do not manually set multipart Content-Type.
     const form = new FormData();
-    form.set('sdp', new Blob([body.sdp], { type: 'application/sdp' }), 'offer.sdp');
-    form.set('session', new Blob([JSON.stringify(session)], { type: 'application/json' }), 'session.json');
+    // OpenAI expects multipart *text fields*, not uploaded file parts.
+    // Passing Blob adds a filename and causes 'field sdp is required' (400).
+    form.set('sdp', body.sdp);
+    form.set('session', JSON.stringify(session));
 
     const upstream = await fetch('https://api.openai.com/v1/realtime/calls', {
       method: 'POST',
