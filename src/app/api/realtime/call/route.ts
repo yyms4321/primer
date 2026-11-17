@@ -9,6 +9,9 @@ const MAX_SDP_BYTES = 128 * 1024;
 const MODEL_RE = /^gpt-realtime(?:-[a-z0-9.-]+)?$/;
 
 export async function POST(request: NextRequest) {
+  if (process.env.VERCEL_ENV === 'preview') {
+    return NextResponse.json({ error: '실시간 음성 기능은 비용 절약을 위해 Preview에서 비활성화되었습니다.' }, { status: 410 });
+  }
   // Realtime calls are billable. Never expose the regular API key to clients.
   const userSession = await getCachedSession();
   if (!userSession?.user?.email) {
