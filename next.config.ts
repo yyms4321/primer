@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
   optimizeFonts: false,
   // Bundle preinstalled modules into Vercel functions for server-side storage reads.
   outputFileTracingIncludes: {
-    "/*": ["./public/primer-bundled/**/*"],
+    "/*": ["./bundled-modules/**/*"],
   },
   eslint: {
     // Skip ESLint in production builds (devDependencies not available)
