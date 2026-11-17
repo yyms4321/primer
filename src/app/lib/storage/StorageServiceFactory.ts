@@ -18,7 +18,7 @@ export class StorageServiceFactory {
       this.instance = process.env.VERCEL_ENV === 'preview'
         ? new BundledFallbackStorageService(
             writable,
-            new LocalStorageService(path.join(process.cwd(), 'public', 'primer-bundled'), baseUrl),
+            new LocalStorageService(path.join(process.cwd(), 'bundled-modules'), baseUrl),
           )
         : writable;
     } else {
