@@ -369,7 +369,9 @@ export const RealtimeController = forwardRef<RealtimeControllerRef, RealtimeCont
       await updateSession(false);
     },
     sendTextMessage: (text: string) => {
-      sendMessage({
+      // A text turn is two ordered Realtime events. Preserve the original
+      // agent/session/tool pipeline; explicitly request text for every reply.
+      const accepted = sendMessage({
         type: "conversation.item.create",
         item: {
           type: "message",
@@ -377,7 +379,14 @@ export const RealtimeController = forwardRef<RealtimeControllerRef, RealtimeCont
           content: [{ type: "input_text", text }],
         },
       });
-      sendMessage({ type: "response.create" });
+      if (accepted) {
+        sendMessage({
+          type: "response.create",
+          response: { output_modalities: ["text"] },
+        });
+      } else {
+        addTranscriptToolError("Realtime", "AI 연결이 끊어졌습니다. 페이지를 새로고침한 후 다시 입력해 주세요.");
+      }
     },
   }));
 
