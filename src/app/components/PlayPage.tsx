@@ -126,8 +126,6 @@ function PlayPageInner({
   // Get AI configuration for selected agent
   const selectedAgentAiConfiguration =
     agents[initialAgentKey]?.aiConfiguration || "default";
-  const selectedConfig =
-    aiConfigurations[selectedAgentAiConfiguration] || aiConfigurations.default;
   // Vercel compatibility branch: retain original Primer UI/tools, disable audio only.
   const hasAudio = false;
 
