@@ -49,7 +49,8 @@ export function useRealtimeConnection({
   const isConnectingRef = useRef<boolean>(false);
 
   const selectedConfig = aiConfigurations[selectedAgentAiConfiguration] || aiConfigurations.default;
-  const hasAudio = selectedConfig?.modalities?.includes('audio');
+  // Text-only mode: retain original Realtime data-channel and tool calls.
+  const hasAudio = false;
 
   const connectToRealtime = useCallback(async () => {
     if (isConnectingRef.current) {
