@@ -49,7 +49,6 @@ export function useSessionManagement({
   const pendingInitialConfigRef = useRef<boolean>(false);
   const configuredAgentKeyRef = useRef<string>('');
 
-  const selectedConfig = aiConfigurations[selectedAgentAiConfiguration] || aiConfigurations.default;
   // Audio I/O is disabled while the original agent tools and workflows remain active.
   const hasAudio = false;
 
