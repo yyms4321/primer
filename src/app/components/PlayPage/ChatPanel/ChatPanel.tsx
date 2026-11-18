@@ -104,7 +104,7 @@ export function ChatPanel({
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
       {/* Figma 97:1005 — title row uses bg-muted, pl-6 pr-[18px] py-3, border-b */}
       <div className="flex shrink-0 items-center justify-between gap-3 rounded-t-2xl border-b border-border bg-muted pl-6 pr-[18px] py-3">
-        <h2 className="min-w-0 text-base font-medium leading-6 text-foreground">Interview Transcript</h2>
+        <h2 className="min-w-0 text-base font-medium leading-6 text-foreground">대화 내용</h2>
         <AgentFilterButton
           agents={agents}
           activeKey={filterAgentKey}
@@ -119,7 +119,7 @@ export function ChatPanel({
           className="min-h-0 flex-1 space-y-2 overflow-y-auto pb-3 [scrollbar-color:hsl(var(--border))_transparent] [scrollbar-gutter:stable] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar]:w-3"
         >
           {visibleStream.length === 0 && (
-            <p className="text-sm italic text-muted-foreground">Waiting for conversation to begin...</p>
+            <p className="text-sm italic text-muted-foreground">대화를 시작합니다...</p>
           )}
           {visibleStream.map((item, idx) => {
             if (item.type === 'BREADCRUMB' && item.breadcrumbKind === 'tool-error') {
@@ -164,7 +164,7 @@ export function ChatPanel({
                 onSendMessage();
               }
             }}
-            placeholder={canSend ? 'Type a message...' : 'Connecting...'}
+            placeholder={canSend ? '한국어로 입력하세요...' : '연결 중...'}
             disabled={!canSend}
             className="h-[80px] min-h-[80px] resize-y rounded-md text-sm"
           />
