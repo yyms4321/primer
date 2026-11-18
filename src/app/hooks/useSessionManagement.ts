@@ -50,7 +50,8 @@ export function useSessionManagement({
   const configuredAgentKeyRef = useRef<string>('');
 
   const selectedConfig = aiConfigurations[selectedAgentAiConfiguration] || aiConfigurations.default;
-  const hasAudio = selectedConfig?.modalities?.includes('audio');
+  // Audio I/O is disabled while the original agent tools and workflows remain active.
+  const hasAudio = false;
 
   const getToolsForAgent = useCallback((currentAgent: AgentConfig) => {
     const registeredTools = ToolRegistry.getInstance().getAllTools();
@@ -196,12 +197,9 @@ export function useSessionManagement({
         type: "realtime",
         instructions: currentAgent.instructions,
         tools: toolsForAI,
-        audio: {
-          input: audioInput,
-          output: {
-            voice: sanitizeVoice(currentAgent.voice),
-          },
-        },
+        ...(hasAudio
+          ? { audio: { input: audioInput, output: { voice: sanitizeVoice(currentAgent.voice) } } }
+          : {}),
         ...(reasoning ? { reasoning } : {}),
       },
     };
@@ -234,7 +232,7 @@ export function useSessionManagement({
   ]);
 
   const clearAudioBuffer = useCallback(() => {
-    if (!isMuted) {
+    if (hasAudio && !isMuted) {
       logger.debug({}, 'Unmuting, clearing audio buffer');
       sendMessage({ type: "input_audio_buffer.clear" });
     }
