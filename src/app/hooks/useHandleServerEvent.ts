@@ -772,7 +772,7 @@ export function useHandleServerEvent({
 
       case "response.completed": // Used by Responses API (figure out a nice way to do this)
       case "response.done": {
-        if (serverEvent.response?.status === 'failed' || serverEvent.response?.status === 'incomplete') {
+        if (['failed', 'incomplete'].includes(serverEvent.response?.status ?? '')) {
           addTranscriptToolError(
             "AI 응답",
             serverEvent.response?.error?.message || "응답이 정상적으로 완료되지 않았습니다. 다시 전송해 주세요.",
