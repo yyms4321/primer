@@ -81,7 +81,7 @@ export const RealtimeController = forwardRef<RealtimeControllerRef, RealtimeCont
   // Reset on disconnect, set to true after first session update
   const hasInitializedSessionRef = useRef<boolean>(false);
 
-  const { addTranscriptBreadcrumb, addTranscriptMessage } = useTranscript();
+  const { addTranscriptBreadcrumb, addTranscriptMessage, addTranscriptToolError } = useTranscript();
   const { logClientEvent, logServerEvent } = useEvent();
   const { setScene } = useScene();
 
