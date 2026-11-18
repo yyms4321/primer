@@ -194,7 +194,11 @@ export function useSessionManagement({
       type: "session.update",
       session: {
         type: "realtime",
-        instructions: currentAgent.instructions,
+        // Preserve all original agent rules and tools; only localize the
+        // conversational language on the Preview branch.
+        instructions: !hasAudio
+          ? currentAgent.instructions + "\\n\\nLanguage: Respond to users in natural Korean (한국어). Ask follow-up questions in Korean. Preserve existing workflow stages and tool behavior."
+          : currentAgent.instructions,
         tools: toolsForAI,
         ...(hasAudio
           ? { audio: { input: audioInput, output: { voice: sanitizeVoice(currentAgent.voice) } } }
