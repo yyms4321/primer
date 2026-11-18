@@ -179,7 +179,7 @@ export function useAgentSwitching({
               `complete, advance via 'workflowPhase nextPhase'.`,
           );
         } else {
-          sendSimulatedUserMessage("Hello!");
+          sendSimulatedUserMessage("안녕하세요! 앞으로 한국어로 대화하며 학습 활동을 만들어 주세요.");
         }
         initialMessageSentRef.current = sessionKey;
       }
