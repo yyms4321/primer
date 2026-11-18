@@ -9,9 +9,6 @@ const MAX_SDP_BYTES = 128 * 1024;
 const MODEL_RE = /^gpt-realtime(?:-[a-z0-9.-]+)?$/;
 
 export async function POST(request: NextRequest) {
-  if (process.env.VERCEL_ENV === 'preview') {
-    return NextResponse.json({ error: '실시간 음성 기능은 비용 절약을 위해 Preview에서 비활성화되었습니다.' }, { status: 410 });
-  }
   // Realtime calls are billable. Never expose the regular API key to clients.
   const userSession = await getCachedSession();
   if (!userSession?.user?.email) {
@@ -49,7 +46,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unsupported realtime model' }, { status: 400 });
     }
 
-    const wantsAudio = !Array.isArray(body.modalities) || body.modalities.includes('audio');
+    // Preview must never request paid audio tokens, regardless of client input.
+    const wantsAudio = process.env.VERCEL_ENV === 'preview'
+      ? false
+      : !Array.isArray(body.modalities) || body.modalities.includes('audio');
     const voice = isValidVoice(body.voice) ? body.voice : DEFAULT_VOICE;
     const session: Record<string, unknown> = {
       type: 'realtime',
