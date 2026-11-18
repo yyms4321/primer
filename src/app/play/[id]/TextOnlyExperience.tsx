@@ -34,6 +34,7 @@ export default function TextOnlyExperience({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [truncated, setTruncated] = useState(false);
+  const [documentText, setDocumentText] = useState('');
   const [usage, setUsage] = useState<Usage | null>(null);
   const messagesRef = useRef<Message[]>([]);
   const busyRef = useRef(false);
@@ -75,6 +76,9 @@ export default function TextOnlyExperience({
       messagesRef.current = completed;
       setMessages(completed);
       setTruncated(Boolean(payload.truncated));
+      setDocumentText((previous) => content.startsWith('바로 위 답변이 끊긴 부분부터 이어 작성해 줘.')
+        ? [previous, payload.answer].filter(Boolean).join('\n\n')
+        : payload.answer);
       setUsage(payload.usage ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : '요청에 실패했습니다.');
@@ -91,12 +95,12 @@ export default function TextOnlyExperience({
     setDraft('');
     setError(null);
     setTruncated(false);
+    setDocumentText('');
     setUsage(null);
   }
 
-  const lastAssistant = [...messages].reverse().find((message) => message.role === 'assistant')?.content;
   const copyDraft = () => {
-    if (lastAssistant) void navigator.clipboard.writeText(lastAssistant);
+    if (documentText) void navigator.clipboard.writeText(documentText);
   };
   const latestAssistantIndex = messages.findLastIndex((message) => message.role === 'assistant');
 
@@ -172,11 +176,11 @@ export default function TextOnlyExperience({
           <section className="flex min-h-[320px] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-lg">
             <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted px-5 py-3">
               <h2 className="text-base font-medium">{creator ? '학습 활동 설계 문서' : 'AI 응답'}</h2>
-              <button type="button" onClick={copyDraft} disabled={!lastAssistant} className="rounded-md border border-border bg-background px-3 py-1 text-xs hover:bg-accent disabled:opacity-40">문서 복사</button>
+              <button type="button" onClick={copyDraft} disabled={!documentText} className="rounded-md border border-border bg-background px-3 py-1 text-xs hover:bg-accent disabled:opacity-40">문서 복사</button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-              {lastAssistant ? (
-                <RichText text={lastAssistant} />
+              {documentText ? (
+                <RichText text={documentText} />
               ) : (
                 <div className="py-8 text-sm leading-7 text-muted-foreground">
                   {creator ? '교사와 AI가 대화하며 만드는 활동 설계 내용이 이곳에 표시됩니다.' : 'AI 응답이 이곳에 표시됩니다.'}
