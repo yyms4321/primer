@@ -71,9 +71,9 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model: MODEL,
         temperature: 0.5,
-        max_completion_tokens: 650,
+        max_completion_tokens: 2800,
         messages: [
-          { role: 'system', content: `모든 응답을 자연스러운 한국어로 작성한다. 이 대화는 비용을 절약하는 텍스트 전용 Preview 테스트다. 음성 출력과 오디오 생성은 하지 않는다. ${task}` },
+          { role: 'system', content: `모든 응답을 자연스러운 한국어로 작성한다. 불필요한 빈 줄, 과도한 목록과 장식은 피하고 문단과 항목을 간결하게 구성한다. 학습 활동 초안을 요청받으면 종료 조건까지 빠짐없이 작성한다. 이 대화는 비용을 절약하는 텍스트 전용 Preview 테스트다. 음성 출력과 오디오 생성은 하지 않는다. ${task}` },
           ...messages,
         ],
       }),
@@ -96,6 +96,7 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({
       answer,
+      truncated: data?.choices?.[0]?.finish_reason === 'length',
       model: MODEL,
       usage: {
         inputTokens: data?.usage?.prompt_tokens ?? null,
